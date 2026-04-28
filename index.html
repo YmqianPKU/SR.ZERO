@@ -1,1003 +1,720 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nim · 尼姆博弈</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Noto+Serif+SC:wght@400;600&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>夜雨微凉 · SR.ZERO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    /* ── 原始网站色值体系 ── */
+    :root {
+      --color-ink: #1a1a2e;
+      --color-text: #374151;
+      --color-muted: #6b7280;
+      --color-light: #9ca3af;
+      --color-border: #e5e7eb;
+      --color-bg: #fafaf9;
+      --color-bg-warm: #f5f4f0;
+      --color-accent: #1e3a5f;
+      --color-accent-light: #2d5a8e;
+      --color-highlight: #c9a96e;
+      --font-body: 'Syne', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --font-display: 'Syne', 'Noto Serif SC', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
 
-  :root {
-    --bg: #080806;
-    --bg2: #0f0f0b;
-    --card: rgba(20,20,14,0.9);
-    --border: rgba(180,160,80,0.15);
-    --border2: rgba(180,160,80,0.3);
-    --gold: #c9a84c;
-    --gold-light: #e8c96a;
-    --gold-dim: rgba(201,168,76,0.4);
-    --stone1: #7a9e7a;
-    --stone2: #9e7a7a;
-    --stone3: #7a7a9e;
-    --stone4: #9e9e7a;
-    --stone5: #7a9e9e;
-    --text: #d4c8a0;
-    --text-dim: #6a6050;
-    --text-bright: #f0e8c8;
-    --nims-ok: rgba(0,220,100,0.15);
-    --nims-win: rgba(220,160,0,0.2);
-    --glow: rgba(201,168,76,0.5);
-  }
+    :root[data-theme="dark"] {
+      --color-ink: #e8e6e3;
+      --color-text: #b8b5b0;
+      --color-muted: #9ca3af;
+      --color-light: #6b7280;
+      --color-border: #2e2c2a;
+      --color-bg: #1a1918;
+      --color-bg-warm: #222120;
+      --color-accent: #7aaddb;
+      --color-accent-light: #9fc5e8;
+      --color-nav-bg: rgba(26, 25, 24, 0.92);
+    }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    background: var(--bg);
-    font-family: 'Noto Serif SC', 'Playfair Display', serif;
-    min-height: 100vh;
-    color: var(--text);
-    overflow-x: hidden;
-  }
+    html { scroll-behavior: smooth; }
 
-  /* 羊皮纸纹理 */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      repeating-linear-gradient(
-        0deg,
-        transparent, transparent 3px,
-        rgba(201,168,76,0.008) 3px, rgba(201,168,76,0.008) 4px
-      ),
-      radial-gradient(ellipse at 50% 0%, rgba(40,30,10,0.4) 0%, transparent 70%),
-      var(--bg);
-    pointer-events: none;
-    z-index: 0;
-  }
+    body {
+      font-family: var(--font-body);
+      color: var(--color-text);
+      background: var(--color-bg);
+      font-size: 18px;
+      line-height: 1.8;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
 
-  .everything { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 20px 60px; }
+    /* ── 布局 ── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
 
-  /* ── 标题 ── */
-  header {
-    text-align: center;
-    padding: 48px 0 36px;
-    position: relative;
-  }
+    /* ── 左侧边栏 ── */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--color-border);
+      background: var(--color-bg);
+      transition: background 0.3s;
+    }
 
-  header::before {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 200px; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
-  }
+    .avatar-wrap {
+      width: 80px; height: 80px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .avatar-ring {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--color-accent);
+      background: var(--color-bg-warm);
+      letter-spacing: -1px;
+      transition: all 0.3s;
+    }
+    .avatar-dot {
+      position: absolute;
+      bottom: 4px; right: 4px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--color-highlight);
+      border: 2px solid var(--color-bg);
+    }
 
-  .chapter-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    color: var(--gold);
-    opacity: 0.7;
-    margin-bottom: 12px;
-  }
+    .sidebar-name {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-ink);
+      margin-bottom: 4px;
+      transition: color 0.3s;
+    }
+    .sidebar-tagline {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
 
-  h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(2.2rem, 6vw, 3.8rem);
-    font-weight: 700;
-    color: var(--text-bright);
-    letter-spacing: 0.05em;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
+    .nav-links {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--color-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 400;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: var(--color-bg-warm);
+      color: var(--color-accent);
+      border-color: var(--color-border);
+    }
+    .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
 
-  h1 span {
-    display: block;
-    font-size: 0.45em;
-    font-style: italic;
-    font-weight: 400;
-    color: var(--gold);
-    letter-spacing: 0.15em;
-    margin-top: 6px;
-  }
+    .sidebar-divider {
+      height: 1px;
+      background: var(--color-border);
+      margin: 12px 0;
+    }
 
-  .quote {
-    margin-top: 18px;
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    font-style: italic;
-    font-family: 'Playfair Display', serif;
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 1.7;
-  }
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--color-muted);
+      font-family: var(--font-mono);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .theme-toggle:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
 
-  /* ── Nim-Sum 显示 ── */
-  .nims-display {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px 28px;
-    margin-bottom: 28px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
-    align-items: center;
-  }
+    .sidebar-social {
+      display: flex;
+      gap: 12px;
+      padding-top: 24px;
+      border-top: 1px solid var(--color-border);
+    }
+    .social-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .social-btn:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background: var(--color-bg-warm);
+    }
+    .social-btn svg { width: 16px; height: 16px; }
 
-  .nims-item {
-    text-align: center;
-    padding: 10px 12px;
-    border-radius: 8px;
-    transition: all 0.3s;
-  }
+    /* ── 主内容 ── */
+    .main {
+      flex: 1;
+      padding: 80px 72px;
+      max-width: 900px;
+    }
 
-  .nims-item.nim-sum {
-    background: rgba(220,160,0,0.08);
-    border: 1px solid rgba(220,160,0,0.2);
-    grid-column: 1 / -1;
-    padding: 16px;
-  }
+    /* ── 入场动画 ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
-  .nims-item .label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--text-dim);
-    letter-spacing: 0.15em;
-    margin-bottom: 4px;
-  }
+    /* ── Hero ── */
+    .hero { margin-bottom: 80px; }
+    .hero-time {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--color-light);
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: var(--color-ink);
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    .hero h1 .name {
+      color: var(--color-accent);
+    }
+    .hero-divider {
+      width: 48px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--color-highlight), transparent);
+      margin-bottom: 24px;
+    }
+    .hero p {
+      font-size: 16px;
+      color: var(--color-text);
+      line-height: 1.9;
+      max-width: 540px;
+      margin-bottom: 32px;
+    }
+    .hero-tags {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .hero-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      padding: 5px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      background: var(--color-bg-warm);
+      transition: all 0.2s;
+    }
+    .hero-tag:hover {
+      color: var(--color-accent);
+      border-color: var(--color-accent);
+    }
 
-  .nims-item .value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.6rem;
-    font-weight: 600;
-    color: var(--text-bright);
-    line-height: 1;
-  }
+    /* ── 分类 ── */
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--color-ink);
+      margin-bottom: 40px;
+    }
 
-  .nims-item.nim-sum .value {
-    font-size: 2.4rem;
-    color: var(--gold);
-  }
+    .category-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 80px;
+    }
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px 24px;
+      background: var(--color-bg-warm);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--color-ink);
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .cat-item:hover {
+      border-color: var(--color-accent);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      text-decoration: none;
+    }
+    .cat-index {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-light);
+      letter-spacing: 1px;
+      min-width: 24px;
+    }
+    .cat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .cat-icon svg { width: 18px; height: 18px; }
+    .cat-info { flex: 1; }
+    .cat-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--color-ink);
+      margin-bottom: 2px;
+    }
+    .cat-desc {
+      font-size: 13px;
+      color: var(--color-muted);
+      line-height: 1.6;
+    }
+    .cat-arrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-light);
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: all 0.2s;
+    }
+    .cat-item:hover .cat-arrow {
+      opacity: 1;
+      transform: translateX(0);
+    }
 
-  .nims-item.winning { background: var(--nims-win); }
-  .nims-item.safe     { background: var(--nims-ok); }
-  .nims-item.winning .value { color: #f5c842; }
-  .nims-item.safe .value    { color: #00dc64; }
+    /* 四个分类配色（与原站风格一致） */
+    .cat-item:nth-child(1) .cat-icon { background: rgba(30,58,95,0.1); color: var(--color-accent); }
+    .cat-item:nth-child(2) .cat-icon { background: rgba(201,169,110,0.15); color: var(--color-highlight); }
+    .cat-item:nth-child(3) .cat-icon { background: rgba(122,173,219,0.15); color: #7aaddb; }
+    .cat-item:nth-child(4) .cat-icon { background: rgba(180,160,120,0.12); color: #b4a078; }
 
-  .nims-eq {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.1rem;
-    color: var(--text-dim);
-    text-align: center;
-    padding: 4px 0;
-    letter-spacing: 0.1em;
-  }
+    /* ── 关于 ── */
+    .about-section { margin-bottom: 80px; }
+    .about-content {
+      padding: 40px;
+      border-left: 3px solid var(--color-accent);
+      background: var(--color-bg-warm);
+      border-radius: 0 10px 10px 0;
+    }
+    .about-content p {
+      font-size: 15px;
+      color: var(--color-text);
+      line-height: 1.9;
+      margin-bottom: 16px;
+    }
+    .about-content p:last-child { margin-bottom: 0; }
+    .about-content p em {
+      color: var(--color-accent);
+      font-style: italic;
+    }
+    .about-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--color-border);
+    }
+    .about-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      border: 1px solid var(--color-border);
+      color: var(--color-muted);
+      background: var(--color-bg);
+    }
+    .about-sign {
+      font-family: var(--font-display);
+      font-size: 13px;
+      color: var(--color-muted);
+    }
 
-  /* ── 博弈区域 ── */
-  .board {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 32px;
-    min-height: 280px;
-    align-items: flex-end;
-  }
+    /* ── 联系方式 ── */
+    .contact-section { margin-bottom: 80px; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .contact-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      border-radius: 10px;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg-warm);
+      text-decoration: none;
+      color: var(--color-ink);
+      transition: all 0.2s;
+    }
+    .contact-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      color: var(--color-ink);
+    }
+    .contact-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .contact-icon svg { width: 18px; height: 18px; }
+    .contact-icon.github { background: rgba(100,116,139,0.1); color: var(--color-muted); }
+    .contact-icon.email { background: rgba(30,58,95,0.1); color: var(--color-accent); }
+    .contact-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 2px;
+    }
+    .contact-value { font-size: 14px; font-weight: 500; color: var(--color-ink); }
 
-  /* ── 石堆 ── */
-  .heap-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
+    /* ── 页脚 ── */
+    .footer {
+      padding: 24px 0;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-light);
+    }
+    .footer-text em { color: var(--color-highlight); font-style: italic; }
 
-  .heap-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-  }
-
-  .heap {
-    position: relative;
-    width: 120px;
-    height: 200px;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-
-  .heap:hover { transform: scale(1.02); }
-
-  .stone {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow:
-      inset -3px -3px 6px rgba(0,0,0,0.5),
-      inset 2px 2px 4px rgba(255,255,255,0.15),
-      0 4px 8px rgba(0,0,0,0.4);
-    user-select: none;
-  }
-
-  .stone:hover {
-    filter: brightness(1.3);
-    box-shadow:
-      inset -3px -3px 6px rgba(0,0,0,0.5),
-      inset 2px 2px 4px rgba(255,255,255,0.15),
-      0 0 16px var(--glow),
-      0 6px 12px rgba(0,0,0,0.5);
-  }
-
-  .stone.removing {
-    animation: stoneRemove 0.5s ease-in forwards;
-  }
-
-  .stone.new-stone {
-    animation: stoneAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes stoneRemove {
-    0%   { transform: translateX(-50%) scale(1); opacity: 1; }
-    50%  { transform: translateX(-50%) scale(1.3) translateY(-20px); opacity: 0.7; }
-    100% { transform: translateX(-50%) scale(0) translateY(-60px); opacity: 0; }
-  }
-
-  @keyframes stoneAppear {
-    0%   { transform: translateX(-50%) scale(0) translateY(20px); opacity: 0; }
-    100% { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
-  }
-
-  /* ── 底部信息 ── */
-  .info-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-
-  @media (max-width: 600px) { .info-row { grid-template-columns: 1fr; } }
-
-  .info-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-  }
-
-  .info-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold);
-    letter-spacing: 0.2em;
-    margin-bottom: 14px;
-    text-transform: uppercase;
-  }
-
-  /* 玩家选择 */
-  .player-choice {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .player-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1.5px solid var(--border2);
-    border-radius: 8px;
-    background: rgba(201,168,76,0.04);
-    color: var(--text-dim);
-    font-family: 'Noto Serif SC', serif;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .player-btn:hover { border-color: var(--gold); color: var(--text); }
-  .player-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
-
-  /* 难度 */
-  .difficulty-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .diff-btn {
-    flex: 1;
-    padding: 8px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .diff-btn:hover { border-color: var(--gold); color: var(--text); }
-  .diff-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
-
-  /* 博弈论说明 */
-  .theory-text {
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    line-height: 1.7;
-  }
-
-  .theory-text b { color: var(--gold); font-weight: 600; }
-
-  .formula {
-    font-family: 'JetBrains Mono', monospace;
-    background: rgba(201,168,76,0.08);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin: 10px 0;
-    font-size: 1rem;
-    color: var(--gold-light);
-    text-align: center;
-    letter-spacing: 0.05em;
-  }
-
-  /* 胜负历史 */
-  .history {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-
-  .history-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-  }
-
-  .history-dot.win  { background: #f5c842; box-shadow: 0 0 6px rgba(245,200,66,0.6); }
-  .history-dot.lose { background: #9e7a7a; }
-
-  /* ── 操作按钮 ── */
-  .actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    padding: 13px 28px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border2);
-    background: rgba(201,168,76,0.06);
-    color: var(--text);
-    font-family: 'Noto Serif SC', serif;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.05em;
-  }
-
-  .btn:hover {
-    background: rgba(201,168,76,0.12);
-    border-color: var(--gold);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  }
-
-  .btn-primary {
-    background: rgba(201,168,76,0.15);
-    border-color: var(--gold);
-    color: var(--gold-light);
-  }
-
-  /* ── 状态消息 ── */
-  .status-bar {
-    text-align: center;
-    padding: 14px;
-    border-radius: 10px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    margin-bottom: 24px;
-    font-size: 1.05rem;
-    min-height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    transition: all 0.3s;
-  }
-
-  .status-bar.human { border-color: rgba(0,180,220,0.3); background: rgba(0,180,220,0.05); }
-  .status-bar.ai    { border-color: rgba(220,140,50,0.3); background: rgba(220,140,50,0.05); }
-  .status-bar.win   { border-color: rgba(245,200,66,0.4); background: rgba(245,200,66,0.08); }
-  .status-bar.lose  { border-color: rgba(200,80,80,0.3); background: rgba(200,80,80,0.06); }
-
-  /* ── 弹窗 ── */
-  .modal {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 100;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(6px);
-  }
-  .modal.show { display: flex; }
-
-  .modal-box {
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 20px;
-    padding: 48px 56px;
-    text-align: center;
-    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    max-width: 380px; width: 90%;
-  }
-
-  @keyframes modalIn {
-    from { transform: scale(0.7) rotate(-2deg); opacity: 0; }
-    to   { transform: scale(1) rotate(0deg); opacity: 1; }
-  }
-
-  .modal-emoji { font-size: 4rem; margin-bottom: 16px; }
-  .modal-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    color: var(--text-bright);
-    margin-bottom: 8px;
-  }
-  .modal-sub { color: var(--text-dim); margin-bottom: 24px; line-height: 1.6; }
-  .modal-box .btn { width: 100%; }
-
-  /* 教学提示 */
-  .hint {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--card);
-    border: 1px solid rgba(201,168,76,0.2);
-    border-radius: 30px;
-    padding: 10px 24px;
-    font-size: 0.8rem;
-    color: var(--gold);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-    font-family: 'JetBrains Mono', monospace;
-    z-index: 10;
-  }
-  .hint.show { opacity: 1; }
-</style>
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: row;
+        flex-wrap: wrap;
+        padding: 24px;
+        align-items: center;
+        gap: 16px;
+      }
+      .avatar-wrap { margin-bottom: 0; }
+      .sidebar-tagline { margin-bottom: 0; }
+      .nav-links { flex-direction: row; flex: none; width: 100%; overflow-x: auto; }
+      .theme-toggle { border: none; padding: 8px; }
+      .sidebar-social { border-top: none; padding-top: 0; border-left: 1px solid var(--color-border); padding-left: 16px; }
+      .main { padding: 40px 24px; }
+      .hero h1 { font-size: 40px; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .about-content { padding: 28px; }
+    }
+  </style>
 </head>
 <body>
-<div class="everything">
 
-  <!-- 标题 -->
-  <header>
-    <div class="chapter-tag">CHAPTER 4 · VOLUME 1</div>
-    <h1>Nim<span>尼姆博弈 · The Game of Nim</span></h1>
-    <p class="quote">"Find the correct number is simplicity itself."</p>
-  </header>
+  <div class="layout">
 
-  <!-- Nim-Sum 显示 -->
-  <div class="nims-display" id="nimsDisplay">
-    <!-- 动态生成 -->
+    <!-- ── 侧边栏 ── -->
+    <aside class="sidebar">
+      <div class="avatar-wrap">
+        <div class="avatar-ring">S0</div>
+        <div class="avatar-dot"></div>
+      </div>
+      <div class="sidebar-name">夜雨微凉</div>
+      <div class="sidebar-tagline">SR.ZERO</div>
+
+      <nav class="nav-links">
+        <a href="#home" class="nav-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          首页
+        </a>
+        <div class="sidebar-divider"></div>
+        <a href="#categories" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          分类
+        </a>
+        <a href="#about" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          关于
+        </a>
+        <a href="#contact" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          联系
+        </a>
+      </nav>
+
+      <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span id="theme-label">深色</span>
+      </button>
+
+      <div class="sidebar-social">
+        <a href="https://github.com" class="social-btn" title="GitHub" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+        <a href="mailto:ymqian@pku.edu.cn" class="social-btn" title="邮箱">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- ── 主内容 ── -->
+    <main class="main">
+
+      <!-- Hero -->
+      <section class="hero reveal" id="home">
+        <div class="hero-time">
+          <span id="clock">--:--</span>
+          <span> / </span>
+          <span id="date-str">----/--/--</span>
+        </div>
+        <h1>你好，我是<br/><span class="name">夜雨微凉</span></h1>
+        <div class="hero-divider"></div>
+        <p>
+          这里是我的数字存档空间。<br/>
+          探索体系架构、产品矩阵、灯塔计划与健康模型——<br/>
+          记录思考，也沉淀成长。
+        </p>
+        <div class="hero-tags">
+          <span class="hero-tag">体系架构</span>
+          <span class="hero-tag">产品矩阵</span>
+          <span class="hero-tag">灯塔计划</span>
+          <span class="hero-tag">健康模型</span>
+        </div>
+      </section>
+
+      <!-- 分类 -->
+      <section id="categories" class="reveal">
+        <div class="section-label">// Categories</div>
+        <div class="section-title">内容分类</div>
+        <div class="category-list">
+          <a class="cat-item" href="#">
+            <span class="cat-index">01</span>
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="cat-info">
+              <div class="cat-name">体系架构</div>
+              <div class="cat-desc">系统设计与技术架构笔记，从底层逻辑到上层应用，构建知识金字塔。</div>
+            </div>
+            <span class="cat-arrow">→</span>
+          </a>
+          <a class="cat-item" href="#">
+            <span class="cat-index">02</span>
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            </div>
+            <div class="cat-info">
+              <div class="cat-name">产品矩阵</div>
+              <div class="cat-desc">产品思考与实践记录，从需求分析到迭代优化，打磨每一处细节。</div>
+            </div>
+            <span class="cat-arrow">→</span>
+          </a>
+          <a class="cat-item" href="#">
+            <span class="cat-index">03</span>
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            </div>
+            <div class="cat-info">
+              <div class="cat-name">灯塔计划</div>
+              <div class="cat-desc">照亮前路的长线项目与里程碑，每一个想法都值得被认真对待。</div>
+            </div>
+            <span class="cat-arrow">→</span>
+          </a>
+          <a class="cat-item" href="#">
+            <span class="cat-index">04</span>
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="cat-info">
+              <div class="cat-name">健康模型</div>
+              <div class="cat-desc">量化自我、科学训练与身心平衡，用数据驱动更好的生活方式。</div>
+            </div>
+            <span class="cat-arrow">→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- 关于 -->
+      <section id="about" class="about-section reveal">
+        <div class="section-label">// About</div>
+        <div class="section-title">关于我</div>
+        <div class="about-content">
+          <p>
+            这里是「夜雨微凉」的数字存档空间。<em>SR.ZERO</em>，既是代号，也是态度——保持初学者心态，在复杂系统中寻找简洁解法。
+          </p>
+          <p>
+            目前活跃于体系架构与产品领域，热衷于从零到一构建系统。灯塔计划是我长期投入的方向，而健康模型则是对自我的持续量化与优化。
+          </p>
+          <div class="about-footer">
+            <div class="about-tags">
+              <span class="tag">体系架构</span>
+              <span class="tag">产品设计</span>
+              <span class="tag">长期主义</span>
+              <span class="tag">量化自我</span>
+            </div>
+            <div class="about-sign">— 夜雨微凉</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 联系方式 -->
+      <section id="contact" class="contact-section reveal">
+        <div class="section-label">// Contact</div>
+        <div class="section-title">建立连接</div>
+        <div class="contact-grid">
+          <a class="contact-card" href="https://github.com" target="_blank">
+            <div class="contact-icon github">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            </div>
+            <div>
+              <div class="contact-label">GitHub</div>
+              <div class="contact-value">github.com/srzero</div>
+            </div>
+          </a>
+          <a class="contact-card" href="mailto:ymqian@pku.edu.cn">
+            <div class="contact-icon email">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div>
+              <div class="contact-label">邮箱</div>
+              <div class="contact-value">ymqian@pku.edu.cn</div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- 页脚 -->
+      <footer class="footer reveal">
+        <div class="footer-text">
+          &copy; <span id="year"></span> 夜雨微凉 · SR.ZERO
+        </div>
+        <div class="footer-text">
+          夜深不知处，<em>但闻雨声凉</em>
+        </div>
+      </footer>
+
+    </main>
   </div>
 
-  <!-- 状态栏 -->
-  <div class="status-bar human" id="statusBar">
-    🔵 选择先手，然后点击石堆开始游戏
-  </div>
+  <script>
+    // 年份
+    document.getElementById('year').textContent = new Date().getFullYear();
 
-  <!-- 石堆区域 -->
-  <div class="board" id="board">
-    <!-- 动态生成 -->
-  </div>
-
-  <!-- 信息卡片 -->
-  <div class="info-row">
-
-    <!-- 游戏设置 -->
-    <div class="info-card">
-      <div class="info-title">Game Setup · 游戏设置</div>
-      <div class="player-choice">
-        <button class="player-btn active" id="btn-human-first" onclick="setFirstPlayer('human')">🔵 我先手</button>
-        <button class="player-btn" id="btn-ai-first" onclick="setFirstPlayer('ai')">🤖 AI先手</button>
-      </div>
-      <div class="difficulty-row">
-        <button class="diff-btn active" data-diff="1" onclick="setDifficulty(1)">入门</button>
-        <button class="diff-btn" data-diff="2" onclick="setDifficulty(2)">标准</button>
-        <button class="diff-btn" data-diff="3" onclick="setDifficulty(3)">挑战</button>
-        <button class="diff-btn" data-diff="4" onclick="setDifficulty(4)">大师</button>
-      </div>
-      <div style="margin-top:16px">
-        <div class="info-title" style="margin-bottom:8px">历史战绩</div>
-        <div class="history" id="history"></div>
-      </div>
-    </div>
-
-    <!-- 博弈论 -->
-    <div class="info-card">
-      <div class="info-title">Game Theory · 博弈论原理</div>
-      <div class="theory-text">
-        每堆石子数做二进制 <b>异或</b>（XOR）：
-      </div>
-      <div class="formula" id="nimFormula">A ⊕ B ⊕ C = ?</div>
-      <div class="theory-text">
-        结果 <b>≠ 0</b> → 当前玩家有必胜策略<br>
-        结果 <b>= 0</b>  → 当前玩家必输（若对手也懂理论）
-      </div>
-      <div style="margin-top:12px;font-size:0.8rem;color:var(--text-dim);line-height:1.6">
-        💡 获胜关键：每次移动后让 XOR 归零
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 操作按钮 -->
-  <div class="actions">
-    <button class="btn btn-primary" onclick="newGame()">✦ 新游戏 New Game</button>
-    <button class="btn" onclick="undoLastMove()">↩ 悔棋 Undo</button>
-  </div>
-
-</div>
-
-<!-- 胜利弹窗 -->
-<div class="modal" id="winModal">
-  <div class="modal-box">
-    <div class="modal-emoji" id="modalEmoji">🏆</div>
-    <div class="modal-title" id="modalTitle">游戏结束</div>
-    <div class="modal-sub" id="modalSub"></div>
-    <button class="btn btn-primary" onclick="closeModal(); newGame();">再来一局</button>
-  </div>
-</div>
-
-<!-- 提示 -->
-<div class="hint" id="hint"></div>
-
-<script>
-// ═══════════════════════════════════════════════════════════════
-//  Nim · 第4章
-//  出自《Winning Ways for Your Mathematical Plays》 Vol.1 Chapter 4
-// ═══════════════════════════════════════════════════════════════
-
-// ── 配色方案（每个石堆） ──
-const HEAP_COLORS = [
-  { base:'#6a8e6a', light:'#8ab88a', dark:'#4a6e4a', glow:'rgba(106,142,106,0.6)' },
-  { base:'#8e6a6a', light:'#b88a8a', dark:'#6e4a4a', glow:'rgba(142,106,106,0.6)' },
-  { base:'#6a6a8e', light:'#8a8ab8', dark:'#4a4a6e', glow:'rgba(106,106,142,0.6)' },
-  { base:'#8e8e6a', light:'#b8b88a', dark:'#6e6e4a', glow:'rgba(142,142,106,0.6)' },
-  { base:'#6a8e8e', light:'#8ab8b8', dark:'#4a6e6e', glow:'rgba(106,142,142,0.6)' },
-  { base:'#8e6a8e', light:'#b88ab8', dark:'#6e4a6e', glow:'rgba(142,106,142,0.6)' },
-];
-
-// ── 游戏状态 ──
-let state = {
-  heaps: [],           // 每堆石子数
-  currentPlayer: 'human', // 'human' | 'ai'
-  humanFirst: true,
-  difficulty: 1,        // 1-4: AI聪明程度
-  history: [],          // [{heaps, player}] for undo
-  history2: [],         // [{heaps, player}] 完整历史
-  gameOver: false,
-  selectedHeap: null,   // 当前选中的石堆（玩家要从中取石）
-  isAIThinking: false,
-  wins: 0,
-  losses: 0
-};
-
-// ── 关卡配置 ──
-const DIFFICULTY_CONFIG = {
-  1: { name:'入门', heaps:[3,5,7], aiMistakes: 0.6, label:'随机' },
-  2: { name:'标准', heaps:[4,6,8], aiMistakes: 0.25, label:'初学' },
-  3: { name:'挑战', heaps:[3,4,5,7], aiMistakes: 0.08, label:'博弈' },
-  4: { name:'大师', heaps:[1,3,5,7,9], aiMistakes: 0, label:'理论' },
-};
-
-// ── XOR nim-sum ──
-function nimSum(heaps) {
-  return heaps.reduce((a, b) => a ^ b, 0);
-}
-
-function computeWinningMove(heaps) {
-  // 找到能让nim-sum归零的移动
-  const ns = nimSum(heaps);
-  if (ns === 0) return null;
-
-  for (let i = 0; i < heaps.length; i++) {
-    const target = heaps[i] ^ ns;
-    if (target < heaps[i]) {
-      return { heap: i, take: heaps[i] - target };
+    // 实时时钟
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const yyyy = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      document.getElementById('clock').textContent = hh + ':' + mm;
+      document.getElementById('date-str').textContent = yyyy + '/' + mo + '/' + dd;
     }
-  }
-  return null;
-}
+    updateClock();
+    setInterval(updateClock, 30000);
 
-function getValidTakeCount(heapSize) {
-  return Math.min(heapSize, Math.ceil(heapSize / 2));
-}
-
-// ── AI 决策 ──
-function aiMove() {
-  if (state.gameOver) return;
-
-  state.isAIThinking = true;
-  updateStatus('🤖 AI正在思考...', 'ai');
-
-  setTimeout(() => {
-    const move = computeWinningMove(state.heaps);
-    let heapIdx, take;
-
-    if (move && Math.random() > state.difficulty.aiMistakes) {
-      heapIdx = move.heap;
-      take = move.take;
-    } else {
-      // 随机选择
-      const nonEmpty = state.heaps.map((h, i) => h > 0 ? i : -1).filter(i => i >= 0);
-      heapIdx = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
-      take = Math.max(1, Math.floor(Math.random() * state.heaps[heapIdx]) + 1);
-    }
-
-    performMove(heapIdx, take, 'ai');
-    state.isAIThinking = false;
-
-    if (!state.gameOver) {
-      updateStatusForHuman();
-    }
-  }, 600 + Math.random() * 400);
-}
-
-// ── 执行移动 ──
-function performMove(heapIdx, count, player) {
-  // 记录历史
-  state.history.push({
-    heaps: [...state.heaps],
-    player: state.currentPlayer,
-    selectedHeap: state.selectedHeap
-  });
-
-  state.history2.push({
-    heaps: [...state.heaps],
-    player: player
-  });
-
-  // 动画移除石子
-  animateRemoveStones(heapIdx, count);
-
-  setTimeout(() => {
-    state.heaps[heapIdx] -= count;
-    state.selectedHeap = null;
-
-    if (state.heaps.every(h => h === 0)) {
-      endGame(player);
-    } else {
-      // 换手
-      state.currentPlayer = player === 'human' ? 'ai' : 'human';
-      renderBoard();
-      updateNimsDisplay();
-    }
-  }, 350);
-}
-
-function endGame(winner) {
-  state.gameOver = true;
-  const humanWon = winner === 'human';
-  const modal = document.getElementById('winModal');
-
-  document.getElementById('modalEmoji').textContent = humanWon ? '🏆' : '🤖';
-  document.getElementById('modalTitle').textContent = humanWon ? '恭喜获胜！' : 'AI获胜';
-  document.getElementById('modalTitle').style.color = humanWon ? '#f5c842' : '#9e7a7a';
-  document.getElementById('modalSub').textContent = humanWon
-    ? '你找到了正确的数字，XOR归零策略成功！'
-    : 'AI运用了博弈论最优策略。再试一次！';
-
-  if (humanWon) {
-    state.wins++;
-    state.losses = 0;
-    document.getElementById('statusBar').className = 'status-bar win';
-    document.getElementById('statusBar').textContent = '🏆 胜利！XOR = 0，你每次都正确归零了nim-sum！';
-  } else {
-    state.losses++;
-    document.getElementById('statusBar').className = 'status-bar lose';
-    document.getElementById('statusBar').textContent = '🤖 AI获胜。提示：每次让 XOR 归零！';
-  }
-
-  renderHistory();
-  modal.classList.add('show');
-}
-
-function closeModal() {
-  document.getElementById('winModal').classList.remove('show');
-}
-
-// ── 动画：移除石子 ──
-function animateRemoveStones(heapIdx, count) {
-  const heapEl = document.getElementById(`heap-${heapIdx}`);
-  if (!heapEl) return;
-  const stones = heapEl.querySelectorAll('.stone');
-  const total = state.heaps[heapIdx];
-  for (let i = 0; i < count; i++) {
-    const idx = total - 1 - i;
-    if (stones[idx]) {
-      stones[idx].classList.add('removing');
-    }
-  }
-}
-
-// ── 渲染石堆 ──
-function renderBoard() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-
-  const maxHeap = Math.max(...state.heaps, 1);
-  const totalHeight = 200;
-
-  state.heaps.forEach((count, heapIdx) => {
-    const col = HEAP_COLORS[heapIdx % HEAP_COLORS.length];
-
-    const container = document.createElement('div');
-    container.className = 'heap-container';
-
-    // 标签
-    const label = document.createElement('div');
-    label.className = 'heap-label';
-    label.textContent = `堆 ${String.fromCharCode(65 + heapIdx)} · ${count}`;
-    container.appendChild(label);
-
-    // 石堆
-    const heap = document.createElement('div');
-    heap.className = 'heap';
-    heap.id = `heap-${heapIdx}`;
-
-    for (let i = 0; i < count; i++) {
-      const stone = document.createElement('div');
-      stone.className = 'stone';
-      stone.dataset.index = i;
-
-      // 计算位置（金字塔堆叠）
-      const layer = Math.floor(i / Math.ceil(maxHeap / 4));
-      const layerSize = Math.max(1, maxHeap - layer);
-      const layerStart = layer * (layer + 1) / 2;
-      const posInLayer = i - layerStart;
-      const layerOffset = (maxHeap - layerSize) / 2;
-
-      const cx = layerOffset + posInLayer + 0.5;
-      const cy = (maxHeap - layer - 0.5);
-
-      const sz = Math.max(14, Math.min(22, 80 / Math.sqrt(maxHeap)));
-      const layerSpacing = sz * 0.85;
-
-      const px = (cx / maxHeap) * 110 + 5;
-      const py = totalHeight - (cy + 1) * layerSpacing - 5;
-
-      stone.style.cssText = `
-        width: ${sz}px;
-        height: ${sz}px;
-        background: radial-gradient(circle at 35% 35%, ${col.light}, ${col.base} 50%, ${col.dark});
-        left: ${px}px;
-        top: ${Math.max(0, py)}px;
-        box-shadow:
-          inset -3px -3px ${sz/4}px rgba(0,0,0,0.5),
-          inset 2px 2px ${sz/4}px rgba(255,255,255,0.15),
-          0 ${sz/5}px ${sz/3}px rgba(0,0,0,0.4);
-      `;
-
-      stone.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (state.gameOver || state.isAIThinking) return;
-        if (state.currentPlayer !== 'human') return;
-        handleStoneClick(heapIdx, i, count);
+    // 滚动入场动画
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const delay = parseInt(entry.target.dataset.delay || 0);
+          setTimeout(() => entry.target.classList.add('visible'), delay);
+          observer.unobserve(entry.target);
+        }
       });
+    }, { threshold: 0.08 });
 
-      heap.appendChild(stone);
-    }
+    document.querySelectorAll('.reveal').forEach((el, i) => {
+      el.dataset.delay = i * 80;
+      observer.observe(el);
+    });
 
-    container.appendChild(heap);
-    board.appendChild(container);
-  });
-}
+    // 平滑导航
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
 
-// ── 点击石子 ──
-function handleStoneClick(heapIdx, stoneIdx, heapCount) {
-  if (state.gameOver) return;
-
-  // 如果已选中其他堆，先取消
-  if (state.selectedHeap !== null && state.selectedHeap !== heapIdx) {
-    // 取消高亮
-  }
-
-  if (state.selectedHeap === heapIdx) {
-    // 取石子：取从底部连续的石子
-    const takeCount = stoneIdx + 1;
-    if (takeCount > 0 && takeCount <= state.heaps[heapIdx]) {
-      performMove(heapIdx, takeCount, 'human');
-      if (!state.gameOver) {
-        setTimeout(() => {
-          if (state.currentPlayer === 'ai') aiMove();
-        }, 500);
+    // 主题切换
+    function toggleTheme() {
+      const root = document.documentElement;
+      const isDark = root.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        root.removeAttribute('data-theme');
+        document.getElementById('theme-label').textContent = '深色';
+      } else {
+        root.setAttribute('data-theme', 'dark');
+        document.getElementById('theme-label').textContent = '浅色';
       }
     }
-    return;
-  }
+  </script>
 
-  // 选中石堆
-  state.selectedHeap = heapIdx;
-  highlightHeap(heapIdx);
-  showHint(`点击第 ${heapIdx + 1} 堆的石子（从底部选择要取的数量）`);
-}
-
-function highlightHeap(heapIdx) {
-  document.querySelectorAll('.heap').forEach((h, i) => {
-    if (i === heapIdx) {
-      h.style.filter = 'brightness(1.3)';
-      h.style.boxShadow = `0 0 20px ${HEAP_COLORS[heapIdx % HEAP_COLORS.length].glow}`;
-    } else {
-      h.style.filter = 'brightness(0.6)';
-      h.style.boxShadow = 'none';
-    }
-  });
-}
-
-function unhighlightAll() {
-  document.querySelectorAll('.heap').forEach(h => {
-    h.style.filter = '';
-    h.style.boxShadow = '';
-  });
-}
-
-// ── Nim-Sum 显示 ──
-function updateNimsDisplay() {
-  const container = document.getElementById('nimsDisplay');
-  const ns = nimSum(state.heaps);
-  const allEmpty = state.heaps.every(h => h === 0);
-  if (allEmpty) {
-    container.innerHTML = '<div class="nims-eq" style="grid-column:1/-1">—</div>';
-    return;
-  }
-
-  const eq = state.heaps.map(h => h.toString(2).padStart(5, '0')).join(' ⊕ ');
-
-  let html = `<div class="nims-item nim-sum ${ns === 0 ? 'winning' : 'safe'}">`;
-  html += `<div class="label">NIM-SUM (XOR of all heaps)</div>`;
-  html += `<div class="value">${ns} = ${ns.toString(2)}</div>`;
-  html += `</div>`;
-
-  html += `<div class="nims-eq">${eq}</div>`;
-
-  state.heaps.forEach((h, i) => {
-    const heapNs = nimSum(state.heaps.map((v, idx) => idx === i ? 0 : v));
-    const makesWin = h > heapNs;
-    html += `<div class="nims-item ${makesWin ? 'winning' : 'safe'}">`;
-    html += `<div class="label">堆 ${String.fromCharCode(65 + i)}</div>`;
-    html += `<div class="value">${h}</div>`;
-    html += `</div>`;
-  });
-
-  container.innerHTML = html;
-
-  // 公式
-  const formula = state.heaps.join(' ⊕ ') + ` = ${ns}`;
-  document.getElementById('nimFormula').textContent = formula;
-}
-
-// ── 状态更新 ──
-function updateStatus(text, cls='') {
-  const bar = document.getElementById('statusBar');
-  bar.textContent = text;
-  bar.className = `status-bar ${cls}`;
-}
-
-function updateStatusForHuman() {
-  const ns = nimSum(state.heaps);
-  if (ns === 0) {
-    updateStatus('⚠️ 当前 XOR=0，这是必输局面！尽量让对手犯错', 'human');
-  } else {
-    updateStatus(`🔵 你的回合！XOR=${ns}≠0 —— 找到让 XOR 归零的方法！`, 'human');
-  }
-}
-
-// ── 悔棋 ──
-function undoLastMove() {
-  if (state.history.length === 0) return;
-  if (state.gameOver) return;
-
-  // 撤销最多两步（撤销对手的+自己的）
-  for (let step = 0; step < 2; step++) {
-    if (state.history.length === 0) break;
-    const last = state.history.pop();
-    state.heaps = last.heaps;
-    state.currentPlayer = last.player;
-    state.selectedHeap = null;
-  }
-
-  unhighlightAll();
-  renderBoard();
-  updateNimsDisplay();
-  updateStatusForHuman();
-}
-
-// ── 游戏初始化 ──
-function newGame() {
-  const config = DIFFICULTY_CONFIG[state.difficulty];
-  state.heaps = [...config.heaps];
-  state.history = [];
-  state.gameOver = false;
-  state.selectedHeap = null;
-  state.currentPlayer = state.humanFirst ? 'human' : 'ai';
-  state.isAIThinking = false;
-
-  unhighlightAll();
-  renderBoard();
-  updateNimsDisplay();
-
-  if (state.currentPlayer === 'ai') {
-    updateStatus('🤖 AI回合...', 'ai');
-    setTimeout(aiMove, 800);
-  } else {
-    updateStatusForHuman();
-  }
-}
-
-function setFirstPlayer(who) {
-  state.humanFirst = (who === 'human');
-  document.getElementById('btn-human-first').classList.toggle('active', who === 'human');
-  document.getElementById('btn-ai-first').classList.toggle('active', who === 'ai');
-  newGame();
-}
-
-function setDifficulty(diff) {
-  state.difficulty = diff;
-  document.querySelectorAll('.diff-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.diff) === diff);
-  });
-  newGame();
-}
-
-// ── 历史记录 ──
-function renderHistory() {
-  const el = document.getElementById('history');
-  el.innerHTML = '';
-  // 显示最近10局
-  const recent = [...Array(10)].map((_, i) => {
-    const idx = state.wins + state.losses - 10 + i;
-    if (idx < 0) return null;
-    return idx < state.wins ? 'win' : 'lose';
-  }).filter(Boolean);
-
-  recent.reverse().forEach(r => {
-    const dot = document.createElement('div');
-    dot.className = `history-dot ${r}`;
-    el.appendChild(dot);
-  });
-
-  // 统计文字
-  const label = document.createElement('span');
-  label.style.cssText = 'margin-left:8px;font-size:0.75rem;color:var(--text-dim)';
-  label.textContent = `胜 ${state.wins} / 负 ${state.losses}`;
-  el.appendChild(label);
-}
-
-// ── 提示 ──
-let hintTimeout;
-function showHint(text) {
-  const hint = document.getElementById('hint');
-  hint.textContent = text;
-  hint.classList.add('show');
-  clearTimeout(hintTimeout);
-  hintTimeout = setTimeout(() => hint.classList.remove('show'), 3000);
-}
-
-// ── 启动 ──
-newGame();
-</script>
 </body>
 </html>
